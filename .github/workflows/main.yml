@@ -1,0 +1,101 @@
+# .github/workflows/main.yml
+# ---------------------------------------------------------------
+# GitHub Actions CI/CD pipeline for Cviator Pro.
+#
+# Triggers on every push and pull-request to `main`.
+# Steps:
+#   1. Checkout the repo
+#   2. Set up Node.js 18
+#   3. Install + build the frontend (and backend deps)
+#   4. Build Docker images for both services
+#   5. (Optional) Push images to Docker Hub if secrets are set
+# ---------------------------------------------------------------
+
+name: Cviator CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build & Dockerize
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Pull the repo contents into the runner.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2) Install Node.js. We cache npm to speed up subsequent runs.
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      # 3a) Backend deps (no build step, just sanity install).
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install --omit=dev
+
+      # 3b) Frontend deps + production build.
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5000
+        run: npm run build
+
+      # 4) Enable Docker Buildx (better layer caching, multi-platform).
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 5) Build the backend image locally (no push by default).
+      - name: Build backend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          tags: cviator-backend:latest
+          load: true
+          push: false
+
+      # 6) Build the frontend image locally.
+      - name: Build frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          tags: cviator-frontend:latest
+          load: true
+          push: false
+          build-args: |
+            NEXT_PUBLIC_API_URL=http://localhost:5000
+
+      # 7) OPTIONAL push step — runs only on pushes to main, and only
+      #    if DOCKERHUB_USERNAME + DOCKERHUB_TOKEN secrets exist.
+      - name: Log in to Docker Hub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.DOCKERHUB_USERNAME != ''
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push images to Docker Hub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.DOCKERHUB_USERNAME != ''
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          docker tag cviator-backend:latest  $DOCKERHUB_USERNAME/cviator-backend:latest
+          docker tag cviator-frontend:latest $DOCKERHUB_USERNAME/cviator-frontend:latest
+          docker push $DOCKERHUB_USERNAME/cviator-backend:latest
+          docker push $DOCKERHUB_USERNAME/cviator-frontend:latest

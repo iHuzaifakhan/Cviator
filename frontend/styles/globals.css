@@ -1,0 +1,37 @@
+/* frontend/styles/globals.css
+   Minimal global styles. Load one sans-serif family, reset heights,
+   and expose a simple scrollbar helper. Everything else is Tailwind. */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#__next {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+::selection {
+  background: rgba(79, 70, 229, 0.15);
+}
+
+/* Thin scrollbar for the preview panel (WebKit browsers). */
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

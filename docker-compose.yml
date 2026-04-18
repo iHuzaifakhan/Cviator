@@ -1,0 +1,53 @@
+# /docker-compose.yml
+# Orchestrates the full Cviator Pro stack: frontend, backend, and MongoDB.
+# Usage:
+#   docker-compose up --build    # build + start everything
+#   docker-compose down          # stop and remove containers
+#
+# If you don't want MongoDB, comment out the `mongo` service and set
+# USE_DB=false in the backend environment.
+
+version: "3.9"
+
+services:
+  # -------- Backend (Express + Puppeteer) --------
+  backend:
+    build: ./backend
+    container_name: cviator-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongo:27017/cviator
+      - USE_DB=false   # set to "true" to persist resumes in MongoDB
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  # -------- Frontend (Next.js + Tailwind) --------
+  frontend:
+    build: ./frontend
+    container_name: cviator-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # Inside the Docker network, the backend is reachable as "backend".
+      # From the browser (outside Docker), we still need localhost:5000,
+      # so we expose it via NEXT_PUBLIC_API_URL at build time.
+      - NEXT_PUBLIC_API_URL=http://localhost:5000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # -------- MongoDB (optional) --------
+  mongo:
+    image: mongo:6
+    container_name: cviator-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
