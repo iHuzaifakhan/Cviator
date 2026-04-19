@@ -14,7 +14,6 @@ import Head from 'next/head';
 import ResumeForm from '../components/ResumeForm';
 import LivePreview from '../components/LivePreview';
 
-// Sample data so new users land on a populated preview.
 const DEFAULT_RESUME = {
   name: 'Ada Lovelace',
   email: 'ada@example.com',
@@ -24,24 +23,28 @@ const DEFAULT_RESUME = {
   github: 'github.com/ada-lovelace',
   photo: '',
   summary:
-    'Mathematician and writer, known for work on the Analytical Engine. Passionate about the intersection of art and science.',
+    'Mathematician and writer known for early work on the Analytical Engine.\nPassionate about turning complex ideas into clear, practical systems.',
   education: [
-    { school: 'Self-taught', degree: 'Mathematics & Logic', year: '1835' },
+    {
+      school: 'Self-directed Study',
+      degree: 'Mathematics and Logic',
+      year: '1835',
+    },
   ],
   experience: [
     {
       company: 'Analytical Engine Project',
       role: 'Collaborator',
-      duration: '1842 – 1843',
+      duration: '1842 - 1843',
       description:
-        'Wrote the first published algorithm intended to be processed by a machine.',
+        'Wrote one of the first published algorithms intended for machine processing.\nDocumented technical concepts in a way others could follow and apply.',
     },
   ],
   projects: [
     {
       title: 'Notes on the Analytical Engine',
       description:
-        'Extensive notes including what many consider the first computer program.',
+        'Expanded technical notes into a structured explanation of how a machine could process instructions.\nHighlighted practical use cases beyond arithmetic.',
       link: 'https://en.wikipedia.org/wiki/Analytical_Engine',
     },
   ],
@@ -49,39 +52,45 @@ const DEFAULT_RESUME = {
     {
       title: 'Achievements',
       content:
-        'Published pioneering technical notes that helped shape the future of computing.',
+        'Recognized for foundational contributions to computing history.\nCombined analytical thinking with clear technical communication.',
     },
   ],
-  skills: ['Mathematics', 'Algorithms', 'Technical Writing'],
+  skillsTitle: 'Skills',
+  skills: ['Algorithms', 'Mathematics', 'Technical Writing'],
 };
 
-// Theme = a single accent color. Kept intentionally simple — no gradients.
-// Each entry only needs a human label; the actual colors are resolved
-// inside the template components and the backend HTML generator.
 const THEMES = [
-  { key: 'slate',   label: 'Slate'   },
-  { key: 'indigo',  label: 'Indigo'  },
+  { key: 'slate', label: 'Slate' },
+  { key: 'indigo', label: 'Indigo' },
   { key: 'emerald', label: 'Emerald' },
 ];
 
 export default function Home() {
   const [resume, setResume] = useState(DEFAULT_RESUME);
+  const [optimizedResume, setOptimizedResume] = useState(null);
+  const [jobDescription, setJobDescription] = useState('');
   const [template, setTemplate] = useState('classic');
   const [theme, setTheme] = useState('slate');
   const [downloading, setDownloading] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optimizeMessage, setOptimizeMessage] = useState('');
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const previewResume = optimizedResume || resume;
 
-  /**
-   * POST the current resume data to the backend and trigger a file download.
-   */
+  function updateResume(nextValue) {
+    setOptimizedResume(null);
+    setOptimizeMessage('');
+    setResume(nextValue);
+  }
+
   async function handleDownload() {
     try {
       setDownloading(true);
       const res = await fetch(`${apiUrl}/generate-pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resumeData: resume, template, theme }),
+        body: JSON.stringify({ resumeData: previewResume, template, theme }),
       });
       if (!res.ok) throw new Error(`PDF request failed (${res.status})`);
 
@@ -89,7 +98,7 @@ export default function Home() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${(resume.name || 'resume').replace(/\s+/g, '_')}.pdf`;
+      a.download = `${(previewResume.name || 'resume').replace(/\s+/g, '_')}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -102,18 +111,41 @@ export default function Home() {
     }
   }
 
+  async function handleOptimize() {
+    try {
+      setOptimizing(true);
+      setOptimizeMessage('');
+
+      const res = await fetch(`${apiUrl}/optimize-cv`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeData: resume, jobDescription }),
+      });
+      if (!res.ok) throw new Error(`Optimize request failed (${res.status})`);
+
+      const data = await res.json();
+      setOptimizedResume(data.resumeData || resume);
+      setOptimizeMessage(
+        data.message || 'Preview updated with optimized wording. Your original entries are still preserved.'
+      );
+    } catch (err) {
+      console.error(err);
+      setOptimizeMessage('Could not optimize the CV. The original resume is still available.');
+    } finally {
+      setOptimizing(false);
+    }
+  }
+
   return (
     <>
       <Head>
-        <title>Cviator Pro — Smart Resume Builder</title>
+        <title>Cviator Pro - Smart Resume Builder</title>
         <meta name="description" content="Build and download beautiful resumes in seconds." />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </Head>
 
-      {/* ===================== Top bar ===================== */}
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
-          {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-900 text-xs font-bold text-white">
               C
@@ -123,7 +155,6 @@ export default function Home() {
             </span>
           </div>
 
-          {/* Switchers — pushed to the right */}
           <div className="ml-auto flex flex-wrap items-center gap-4">
             <SegmentedControl
               label="Template"
@@ -131,7 +162,7 @@ export default function Home() {
               onChange={setTemplate}
               options={[
                 { value: 'classic', label: 'Classic' },
-                { value: 'modern',  label: 'Modern'  },
+                { value: 'modern', label: 'Modern' },
               ]}
             />
             <SegmentedControl
@@ -146,16 +177,14 @@ export default function Home() {
               disabled={downloading}
               className="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {downloading ? 'Generating…' : 'Download PDF'}
+              {downloading ? 'Generating...' : 'Download PDF'}
             </button>
           </div>
         </div>
       </header>
 
-      {/* ===================== Body ===================== */}
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          {/* -------- Form column -------- */}
           <section>
             <div className="mb-5">
               <h1 className="text-xl font-semibold text-slate-900">
@@ -165,10 +194,17 @@ export default function Home() {
                 Fill in each section. The preview updates instantly.
               </p>
             </div>
-            <ResumeForm resume={resume} setResume={setResume} />
+            <ResumeForm
+              resume={resume}
+              setResume={updateResume}
+              jobDescription={jobDescription}
+              setJobDescription={setJobDescription}
+              onOptimize={handleOptimize}
+              optimizing={optimizing}
+              optimizeMessage={optimizeMessage}
+            />
           </section>
 
-          {/* -------- Preview column -------- */}
           <section className="lg:sticky lg:top-20 lg:self-start">
             <div className="mb-5 flex items-end justify-between">
               <div>
@@ -183,7 +219,7 @@ export default function Home() {
             </div>
 
             <div className="max-h-[calc(100vh-11rem)] overflow-y-auto scroll-thin rounded-lg border border-slate-200 bg-slate-100 p-4">
-              <LivePreview resume={resume} template={template} theme={theme} />
+              <LivePreview resume={previewResume} template={template} theme={theme} />
             </div>
           </section>
         </div>
@@ -198,9 +234,6 @@ export default function Home() {
   );
 }
 
-/**
- * Segmented control — a tight pill group used for template + accent switchers.
- */
 function SegmentedControl({ label, value, onChange, options }) {
   return (
     <div className="flex items-center gap-2">

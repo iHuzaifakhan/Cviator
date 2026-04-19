@@ -1,29 +1,28 @@
 // frontend/components/templates/TemplateModern.js
 // ---------------------------------------------------------------
-// Modern template — two columns. Sidebar carries the photo, contact
+// Modern template â€” two columns. Sidebar carries the photo, contact
 // info and skills on a dark panel; main column carries experience,
 // education, projects, and custom sections.
 //
-// One accent color per theme — no gradients.
+// One accent color per theme â€” no gradients.
 // Mirrors backend/utils/generateHTML.js for PDF parity.
 // ---------------------------------------------------------------
 
-// Each theme: sidebar background (dark), sidebar accent, heading accent.
 const themeStyles = {
   slate: {
-    sidebarBg: '#1e293b',   // slate-800
-    accent:    '#94a3b8',   // slate-400  (sidebar text accent)
-    heading:   '#334155',   // slate-700  (main-column heading)
+    sidebarBg: '#1e293b',
+    accent: '#94a3b8',
+    heading: '#334155',
   },
   indigo: {
     sidebarBg: '#312e81',
-    accent:    '#a5b4fc',
-    heading:   '#4f46e5',
+    accent: '#a5b4fc',
+    heading: '#4f46e5',
   },
   emerald: {
     sidebarBg: '#064e3b',
-    accent:    '#6ee7b7',
-    heading:   '#059669',
+    accent: '#6ee7b7',
+    heading: '#059669',
   },
 };
 
@@ -33,11 +32,7 @@ export default function TemplateModern({ resume, theme = 'slate' }) {
 
   return (
     <article className="grid min-h-[1050px] grid-cols-1 bg-white text-[12px] text-slate-900 sm:grid-cols-[230px_1fr]">
-      {/* ---------- Sidebar ---------- */}
-      <aside
-        className="p-6 text-slate-100"
-        style={{ background: s.sidebarBg }}
-      >
+      <aside className="p-6 text-slate-100" style={{ background: s.sidebarBg }}>
         {r.photo ? (
           <img
             src={r.photo}
@@ -55,8 +50,8 @@ export default function TemplateModern({ resume, theme = 'slate' }) {
         </h1>
 
         <div className="mt-4 space-y-2 text-[11px]" style={{ color: s.accent }}>
-          {r.email    && <InfoRow label="Email"    value={r.email} />}
-          {r.phone    && <InfoRow label="Phone"    value={r.phone} />}
+          {r.email && <InfoRow label="Email" value={r.email} />}
+          {r.phone && <InfoRow label="Phone" value={r.phone} />}
           {r.location && <InfoRow label="Location" value={r.location} />}
           {r.linkedin && (
             <InfoRow
@@ -76,7 +71,7 @@ export default function TemplateModern({ resume, theme = 'slate' }) {
 
         {(r.skills || []).length > 0 && (
           <div className="mt-6">
-            <SidebarHeading>Skills</SidebarHeading>
+            <SidebarHeading>{r.skillsTitle || 'Skills'}</SidebarHeading>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {r.skills.map((skill, i) => (
                 <span
@@ -91,11 +86,10 @@ export default function TemplateModern({ resume, theme = 'slate' }) {
         )}
       </aside>
 
-      {/* ---------- Main ---------- */}
       <main className="p-8">
         {r.summary && (
           <Section title="About" accent={s.heading}>
-            <p className="text-slate-700">{r.summary}</p>
+            <MultilineText>{r.summary}</MultilineText>
           </Section>
         )}
 
@@ -109,7 +103,7 @@ export default function TemplateModern({ resume, theme = 'slate' }) {
                 accent={s.heading}
               />
               {ex.description && (
-                <p className="mt-1 text-slate-700">{ex.description}</p>
+                <MultilineText className="mt-1">{ex.description}</MultilineText>
               )}
             </div>
           ))}
@@ -144,7 +138,7 @@ export default function TemplateModern({ resume, theme = 'slate' }) {
                 )}
               </div>
               {pr.description && (
-                <p className="mt-1 text-slate-700">{pr.description}</p>
+                <MultilineText className="mt-1">{pr.description}</MultilineText>
               )}
             </div>
           ))}
@@ -157,7 +151,7 @@ export default function TemplateModern({ resume, theme = 'slate' }) {
               title={sec.title || 'Custom Section'}
               accent={s.heading}
             >
-              <p className="text-slate-700">{sec.content}</p>
+              <MultilineText>{sec.content}</MultilineText>
             </Section>
           ) : null
         )}
@@ -165,8 +159,6 @@ export default function TemplateModern({ resume, theme = 'slate' }) {
     </article>
   );
 }
-
-/* ---------- Helpers ---------- */
 
 function Section({ title, accent, children }) {
   return (
@@ -200,7 +192,7 @@ function EntryHeader({ left, sub, right, accent }) {
 
 function SidebarHeading({ children }) {
   return (
-    <h2 className="pb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/90 border-b border-white/10">
+    <h2 className="border-b border-white/10 pb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/90">
       {children}
     </h2>
   );
@@ -226,6 +218,10 @@ function InfoRow({ label, value, href }) {
       )}
     </div>
   );
+}
+
+function MultilineText({ children, className = '' }) {
+  return <p className={`whitespace-pre-line text-slate-700 ${className}`.trim()}>{children}</p>;
 }
 
 function getInitials(name = '') {

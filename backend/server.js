@@ -6,6 +6,10 @@
 // ---------------------------------------------------------------
 
 require('dotenv').config();           // load .env into process.env
+
+// Debug: confirm the Gemini key is actually loaded (don't print the value).
+console.log('ENV KEY EXISTS:', !!process.env.GEMINI_API_KEY);
+
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -23,6 +27,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 // Parse JSON bodies up to 2MB (resumes are small but leave headroom).
 app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true }));
 
 // Simple request logger — helps debugging while running locally.
 app.use((req, _res, next) => {
@@ -37,7 +42,7 @@ app.get('/', (_req, res) => {
 
 app.use('/generate-pdf', pdfRoutes);   // POST /generate-pdf
 app.use('/', resumeRoutes);            // POST /save-resume, GET /resume/:id
-app.use('/improve-text', aiRoutes);    // POST /improve-text
+app.use('/optimize-cv', aiRoutes);     // POST /optimize-cv
 
 // ---------------- Optional DB connection ----------------
 // We only connect to MongoDB if USE_DB=true in the environment.

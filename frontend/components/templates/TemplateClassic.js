@@ -1,16 +1,14 @@
 // frontend/components/templates/TemplateClassic.js
 // ---------------------------------------------------------------
-// Classic template — strictly minimal, black & white, print-ready.
+// Classic template â€” strictly minimal, black & white, print-ready.
 // The accent `theme` only subtly colors section headings.
 //
 // Mirrors backend/utils/generateHTML.js so the PDF looks identical.
 // ---------------------------------------------------------------
 
-// Accent color per theme. Kept intentionally muted — this template
-// is meant to look professional on any printer.
 const accentFor = {
-  slate:   '#334155',
-  indigo:  '#4f46e5',
+  slate: '#334155',
+  indigo: '#4f46e5',
   emerald: '#059669',
 };
 
@@ -20,7 +18,6 @@ export default function TemplateClassic({ resume, theme = 'slate' }) {
 
   return (
     <article className="bg-white p-10 text-[12px] leading-relaxed text-slate-900">
-      {/* Header */}
       <header className="mb-6 flex items-center gap-5 border-b border-slate-200 pb-5">
         {r.photo && (
           <img
@@ -34,19 +31,19 @@ export default function TemplateClassic({ resume, theme = 'slate' }) {
             {r.name || 'Your Name'}
           </h1>
           <p className="mt-1 text-sm text-slate-600">
-            {[r.email, r.phone, r.location].filter(Boolean).join(' · ')}
+            {[r.email, r.phone, r.location].filter(Boolean).join(' • ')}
           </p>
           <p className="mt-1 text-sm text-slate-500">
             {[stripProtocol(r.linkedin), stripProtocol(r.github)]
               .filter(Boolean)
-              .join(' · ')}
+              .join(' • ')}
           </p>
         </div>
       </header>
 
       {r.summary && (
         <Section title="Summary" accent={accent}>
-          <p className="text-slate-700">{r.summary}</p>
+          <MultilineText>{r.summary}</MultilineText>
         </Section>
       )}
 
@@ -60,7 +57,7 @@ export default function TemplateClassic({ resume, theme = 'slate' }) {
               accent={accent}
             />
             {ex.description && (
-              <p className="mt-1 text-slate-700">{ex.description}</p>
+              <MultilineText className="mt-1">{ex.description}</MultilineText>
             )}
           </Entry>
         ))}
@@ -96,17 +93,19 @@ export default function TemplateClassic({ resume, theme = 'slate' }) {
               )}
             </div>
             {pr.description && (
-              <p className="mt-1 text-slate-700">{pr.description}</p>
+              <MultilineText className="mt-1">{pr.description}</MultilineText>
             )}
           </Entry>
         ))}
       </Section>
 
-      <Section title="Skills" accent={accent}>
-        <p className="text-slate-700">
-          {(r.skills || []).join(' · ')}
-        </p>
-      </Section>
+      {(r.skills || []).length > 0 && (
+        <Section title={r.skillsTitle || 'Skills'} accent={accent}>
+          <p className="text-slate-700">
+            {(r.skills || []).join(' • ')}
+          </p>
+        </Section>
+      )}
 
       {(r.customSections || []).map((sec, i) =>
         sec?.title || sec?.content ? (
@@ -115,15 +114,13 @@ export default function TemplateClassic({ resume, theme = 'slate' }) {
             title={sec.title || 'Custom Section'}
             accent={accent}
           >
-            <p className="text-slate-700">{sec.content}</p>
+            <MultilineText>{sec.content}</MultilineText>
           </Section>
         ) : null
       )}
     </article>
   );
 }
-
-/* ---------- Small building blocks ---------- */
 
 function Section({ title, accent, children }) {
   return (
@@ -159,7 +156,9 @@ function EntryHeader({ left, sub, right, accent }) {
   );
 }
 
-/* ---------- URL helpers ---------- */
+function MultilineText({ children, className = '' }) {
+  return <p className={`whitespace-pre-line text-slate-700 ${className}`.trim()}>{children}</p>;
+}
 
 function toExternalUrl(value = '') {
   if (!value) return '#';

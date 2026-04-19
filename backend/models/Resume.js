@@ -50,6 +50,7 @@ const ResumeSchema = new mongoose.Schema(
     experience: [ExperienceSchema],
     projects: [ProjectSchema],
     customSections: [CustomSectionSchema],
+    skillsTitle: { type: String, default: 'Skills' },
     skills: [String],
     template: { type: String, default: 'classic' },
     theme: { type: String, default: 'aurora' },

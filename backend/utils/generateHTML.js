@@ -5,29 +5,26 @@
 //
 // The visual style here intentionally mirrors the React templates
 // in frontend/components/templates/* so the PDF matches the live
-// preview pixel-for-pixel (close enough for a resume, anyway).
+// preview closely.
 // ---------------------------------------------------------------
 
-/** Theme = one accent color per flavor. Keep in sync with the React side. */
 const themes = {
   slate: {
-    accent:     '#334155',
-    sidebarBg:  '#1e293b',
+    accent: '#334155',
+    sidebarBg: '#1e293b',
     sidebarAcc: '#94a3b8',
   },
   indigo: {
-    accent:     '#4f46e5',
-    sidebarBg:  '#312e81',
+    accent: '#4f46e5',
+    sidebarBg: '#312e81',
     sidebarAcc: '#a5b4fc',
   },
   emerald: {
-    accent:     '#059669',
-    sidebarBg:  '#064e3b',
+    accent: '#059669',
+    sidebarBg: '#064e3b',
     sidebarAcc: '#6ee7b7',
   },
 };
-
-// ---- Tiny helpers ---------------------------------------------------
 
 function esc(str = '') {
   return String(str)
@@ -53,18 +50,18 @@ function getInitials(name = '') {
   return words.map((w) => w[0].toUpperCase()).join('');
 }
 
-/** A section heading — colored border & text, matches React templates. */
 function sectionTag(title, accent) {
   return `<h2 style="color:${accent};border-bottom:1px solid ${accent}33">${esc(title)}</h2>`;
 }
 
-// ---- Classic template ---------------------------------------------
+function multilineBody(text = '') {
+  if (!text) return '';
+  return `<p class="body">${esc(text).replace(/\r?\n/g, '<br />')}</p>`;
+}
 
 function classicTemplate(d, t) {
-  const contact = [d.email, d.phone, d.location].filter(Boolean).map(esc).join(' · ');
-  const social  = [stripProtocol(d.linkedin), stripProtocol(d.github)]
-    .filter(Boolean).map(esc).join(' · ');
-
+  const contact = [d.email, d.phone, d.location].filter(Boolean).map(esc).join(' • ');
+  const social = [stripProtocol(d.linkedin), stripProtocol(d.github)].filter(Boolean).map(esc).join(' • ');
   const photo = d.photo
     ? `<img class="photo" src="${esc(d.photo)}" alt="${esc(d.name || 'Profile')}" />`
     : '';
@@ -73,7 +70,7 @@ function classicTemplate(d, t) {
     <div class="entry-header">
       <div>
         <div class="entry-left">${esc(left || '')}</div>
-        ${sub  ? `<div class="entry-sub" style="color:${t.accent}">${esc(sub)}</div>` : ''}
+        ${sub ? `<div class="entry-sub" style="color:${t.accent}">${esc(sub)}</div>` : ''}
       </div>
       ${right ? `<div class="entry-right">${esc(right)}</div>` : ''}
     </div>`;
@@ -81,7 +78,7 @@ function classicTemplate(d, t) {
   const experience = (d.experience || []).map((ex) => `
     <div>
       ${renderEntryHeader(ex.company, ex.role, ex.duration)}
-      ${ex.description ? `<p class="body">${esc(ex.description)}</p>` : ''}
+      ${multilineBody(ex.description)}
     </div>`).join('');
 
   const education = (d.education || []).map((ed) =>
@@ -94,17 +91,16 @@ function classicTemplate(d, t) {
         <div class="entry-left">${esc(pr.title || '')}</div>
         ${pr.link ? `<a class="link-muted" href="${esc(toExternalUrl(pr.link))}">${esc(stripProtocol(pr.link))}</a>` : ''}
       </div>
-      ${pr.description ? `<p class="body">${esc(pr.description)}</p>` : ''}
+      ${multilineBody(pr.description)}
     </div>`).join('');
 
-  const skills = (d.skills || []).filter(Boolean).map(esc).join(' · ');
-
+  const skills = (d.skills || []).filter(Boolean).map(esc).join(' • ');
   const customs = (d.customSections || [])
     .filter((s) => s?.title || s?.content)
     .map((s) => `
       <section>
         ${sectionTag(s.title || 'Custom Section', t.accent)}
-        <p class="body">${esc(s.content || '')}</p>
+        ${multilineBody(s.content)}
       </section>`).join('');
 
   return `
@@ -114,14 +110,14 @@ function classicTemplate(d, t) {
         <div class="header-main">
           <h1>${esc(d.name || 'Your Name')}</h1>
           ${contact ? `<div class="contact">${contact}</div>` : ''}
-          ${social  ? `<div class="contact muted">${social}</div>` : ''}
+          ${social ? `<div class="contact muted">${social}</div>` : ''}
         </div>
       </header>
 
       ${d.summary ? `
         <section>
           ${sectionTag('Summary', t.accent)}
-          <p class="body">${esc(d.summary)}</p>
+          ${multilineBody(d.summary)}
         </section>` : ''}
 
       <section>
@@ -139,16 +135,15 @@ function classicTemplate(d, t) {
         <div class="stack">${projects}</div>
       </section>
 
+      ${skills ? `
       <section>
-        ${sectionTag('Skills', t.accent)}
+        ${sectionTag(d.skillsTitle || 'Skills', t.accent)}
         <p class="body">${skills}</p>
-      </section>
+      </section>` : ''}
 
       ${customs}
     </article>`;
 }
-
-// ---- Modern template -----------------------------------------------
 
 function modernTemplate(d, t) {
   const photo = d.photo
@@ -176,16 +171,16 @@ function modernTemplate(d, t) {
       <h1 class="sidebar-name">${esc(d.name || 'Your Name')}</h1>
 
       <div class="info-stack" style="color:${t.sidebarAcc}">
-        ${info('Email',    d.email)}
-        ${info('Phone',    d.phone)}
+        ${info('Email', d.email)}
+        ${info('Phone', d.phone)}
         ${info('Location', d.location)}
         ${info('LinkedIn', stripProtocol(d.linkedin), d.linkedin && toExternalUrl(d.linkedin))}
-        ${info('GitHub',   stripProtocol(d.github),   d.github   && toExternalUrl(d.github))}
+        ${info('GitHub', stripProtocol(d.github), d.github && toExternalUrl(d.github))}
       </div>
 
       ${skills ? `
         <div class="sidebar-section">
-          <h2 class="sidebar-heading">Skills</h2>
+          <h2 class="sidebar-heading">${esc(d.skillsTitle || 'Skills')}</h2>
           <div class="chips">${skills}</div>
         </div>` : ''}
     </aside>`;
@@ -194,7 +189,7 @@ function modernTemplate(d, t) {
     <div class="entry-header">
       <div>
         <div class="entry-left">${esc(left || '')}</div>
-        ${sub  ? `<div class="entry-sub" style="color:${t.accent}">${esc(sub)}</div>` : ''}
+        ${sub ? `<div class="entry-sub" style="color:${t.accent}">${esc(sub)}</div>` : ''}
       </div>
       ${right ? `<div class="entry-right">${esc(right)}</div>` : ''}
     </div>`;
@@ -202,7 +197,7 @@ function modernTemplate(d, t) {
   const experience = (d.experience || []).map((ex) => `
     <div>
       ${renderEntryHeader(ex.company, ex.role, ex.duration)}
-      ${ex.description ? `<p class="body">${esc(ex.description)}</p>` : ''}
+      ${multilineBody(ex.description)}
     </div>`).join('');
 
   const education = (d.education || []).map((ed) =>
@@ -215,7 +210,7 @@ function modernTemplate(d, t) {
         <div class="entry-left">${esc(pr.title || '')}</div>
         ${pr.link ? `<a class="link-muted" href="${esc(toExternalUrl(pr.link))}">${esc(stripProtocol(pr.link))}</a>` : ''}
       </div>
-      ${pr.description ? `<p class="body">${esc(pr.description)}</p>` : ''}
+      ${multilineBody(pr.description)}
     </div>`).join('');
 
   const customs = (d.customSections || [])
@@ -223,7 +218,7 @@ function modernTemplate(d, t) {
     .map((s) => `
       <section>
         ${sectionTag(s.title || 'Custom Section', t.accent)}
-        <p class="body">${esc(s.content || '')}</p>
+        ${multilineBody(s.content)}
       </section>`).join('');
 
   return `
@@ -233,7 +228,7 @@ function modernTemplate(d, t) {
         ${d.summary ? `
           <section>
             ${sectionTag('About', t.accent)}
-            <p class="body">${esc(d.summary)}</p>
+            ${multilineBody(d.summary)}
           </section>` : ''}
 
         <section>
@@ -255,8 +250,6 @@ function modernTemplate(d, t) {
       </main>
     </article>`;
 }
-
-// ---- Master wrapper ------------------------------------------------
 
 function generateHTML(resumeData = {}, templateName = 'classic', themeName = 'slate') {
   const t = themes[themeName] || themes.slate;
@@ -280,7 +273,6 @@ function generateHTML(resumeData = {}, templateName = 'classic', themeName = 'sl
       background: #ffffff;
     }
     a { color: inherit; text-decoration: none; }
-
     h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }
     h2 {
       margin: 0 0 8px 0;
@@ -290,25 +282,20 @@ function generateHTML(resumeData = {}, templateName = 'classic', themeName = 'sl
       letter-spacing: 0.2em;
       padding-bottom: 4px;
     }
-
     section { margin-top: 20px; }
     .stack { display: flex; flex-direction: column; gap: 12px; }
-    .body  { margin: 4px 0 0 0; color: #334155; }
+    .body { margin: 4px 0 0 0; color: #334155; }
     .muted { color: #64748b; }
-
     .entry-header {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
       gap: 12px;
     }
-    .entry-left  { font-weight: 600; color: #0f172a; }
-    .entry-sub   { font-size: 12px; margin-top: 2px; }
+    .entry-left { font-weight: 600; color: #0f172a; }
+    .entry-sub { font-size: 12px; margin-top: 2px; }
     .entry-right { font-size: 11px; color: #64748b; white-space: nowrap; }
-
     .link-muted { font-size: 11px; color: #64748b; }
-
-    /* ---- Classic ---- */
     .classic { padding: 40px; }
     .classic-header {
       display: flex;
@@ -321,7 +308,6 @@ function generateHTML(resumeData = {}, templateName = 'classic', themeName = 'sl
     .header-main { flex: 1; }
     .contact { margin-top: 4px; font-size: 12px; color: #475569; }
     .contact.muted { color: #64748b; }
-
     .photo {
       width: 80px;
       height: 80px;
@@ -330,8 +316,6 @@ function generateHTML(resumeData = {}, templateName = 'classic', themeName = 'sl
       border: 1px solid #e2e8f0;
       flex-shrink: 0;
     }
-
-    /* ---- Modern ---- */
     .modern {
       display: grid;
       grid-template-columns: 230px 1fr;

@@ -4,9 +4,9 @@
 // input styling. Groups inputs in this order:
 //   1. Personal info    2. Social links    3. Summary
 //   4. Experience       5. Education       6. Projects
-//   7. Skills           8. Custom sections
+//   7. Skills           8. Custom sections 9. AI optimization
 //
-// State flows up through `setResume` — the parent owns all data so
+// State flows up through `setResume` - the parent owns all data so
 // the live preview stays in sync.
 // ---------------------------------------------------------------
 
@@ -14,10 +14,17 @@ import { useState } from 'react';
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
 
-export default function ResumeForm({ resume, setResume }) {
+export default function ResumeForm({
+  resume,
+  setResume,
+  jobDescription = '',
+  setJobDescription = () => {},
+  onOptimize = () => {},
+  optimizing = false,
+  optimizeMessage = '',
+}) {
   const [uploadError, setUploadError] = useState('');
 
-  // ---- Generic updaters ----
   function updateField(key, value) {
     setResume((prev) => ({ ...prev, [key]: value }));
   }
@@ -42,13 +49,11 @@ export default function ResumeForm({ resume, setResume }) {
     });
   }
 
-  // Skills are stored as an array; the UI shows them as a CSV string.
   function updateSkills(csv) {
     const arr = csv.split(',').map((s) => s.trim()).filter(Boolean);
     updateField('skills', arr);
   }
 
-  // ---- Photo upload ----
   function handlePhotoChange(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -76,10 +81,8 @@ export default function ResumeForm({ resume, setResume }) {
 
   return (
     <div className="space-y-6">
-      {/* ---------------- 1. Personal info ---------------- */}
       <Section title="Personal information">
         <div className="flex flex-col gap-6 sm:flex-row">
-          {/* Photo — compact widget: circular preview + upload/remove actions */}
           <div className="flex flex-shrink-0 items-start gap-4 sm:flex-col sm:items-center sm:gap-3">
             <div className="relative h-20 w-20 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
               {resume.photo ? (
@@ -112,26 +115,44 @@ export default function ResumeForm({ resume, setResume }) {
                   Remove
                 </button>
               )}
-              <p className="text-[11px] text-slate-400">JPG or PNG, ≤2 MB</p>
+              <p className="text-[11px] text-slate-400">JPG or PNG, &lt;=2 MB</p>
               {uploadError && (
                 <p className="max-w-[10rem] text-[11px] text-red-600">{uploadError}</p>
               )}
             </div>
           </div>
 
-          {/* Personal fields */}
           <div className="flex-1">
             <Grid>
-              <Input label="Full name"  value={resume.name}     onChange={(v) => updateField('name', v)} />
-              <Input label="Email"      value={resume.email}    onChange={(v) => updateField('email', v)} />
-              <Input label="Phone"      value={resume.phone}    onChange={(v) => updateField('phone', v)} />
-              <Input label="Location"   value={resume.location} onChange={(v) => updateField('location', v)} />
+              <Input
+                label="Full name"
+                value={resume.name}
+                placeholder="Enter your full name"
+                onChange={(v) => updateField('name', v)}
+              />
+              <Input
+                label="Email"
+                value={resume.email}
+                placeholder="Enter your email address"
+                onChange={(v) => updateField('email', v)}
+              />
+              <Input
+                label="Phone"
+                value={resume.phone}
+                placeholder="Enter your phone number"
+                onChange={(v) => updateField('phone', v)}
+              />
+              <Input
+                label="Location"
+                value={resume.location}
+                placeholder="Enter your location"
+                onChange={(v) => updateField('location', v)}
+              />
             </Grid>
           </div>
         </div>
       </Section>
 
-      {/* ---------------- 2. Social links ---------------- */}
       <Section title="Social links">
         <Grid>
           <Input
@@ -149,17 +170,15 @@ export default function ResumeForm({ resume, setResume }) {
         </Grid>
       </Section>
 
-      {/* ---------------- 3. Summary ---------------- */}
       <Section title="Professional summary">
         <Textarea
           value={resume.summary}
           onChange={(v) => updateField('summary', v)}
           rows={4}
-          placeholder="A short paragraph about who you are and what you do."
+          placeholder="Write a short professional summary..."
         />
       </Section>
 
-      {/* ---------------- 4. Experience ---------------- */}
       <Section
         title="Experience"
         onAdd={() =>
@@ -169,21 +188,36 @@ export default function ResumeForm({ resume, setResume }) {
         {(resume.experience || []).map((ex, i) => (
           <RepeatItem key={`exp-${i}`} onRemove={() => removeArrayItem('experience', i)}>
             <Grid>
-              <Input label="Company"  value={ex.company}  onChange={(v) => updateArrayItem('experience', i, 'company', v)} />
-              <Input label="Role"     value={ex.role}     onChange={(v) => updateArrayItem('experience', i, 'role', v)} />
-              <Input label="Duration" value={ex.duration} onChange={(v) => updateArrayItem('experience', i, 'duration', v)} />
+              <Input
+                label="Company"
+                value={ex.company}
+                placeholder="Enter company name"
+                onChange={(v) => updateArrayItem('experience', i, 'company', v)}
+              />
+              <Input
+                label="Role"
+                value={ex.role}
+                placeholder="Enter your role"
+                onChange={(v) => updateArrayItem('experience', i, 'role', v)}
+              />
+              <Input
+                label="Duration"
+                value={ex.duration}
+                placeholder="Enter date range"
+                onChange={(v) => updateArrayItem('experience', i, 'duration', v)}
+              />
             </Grid>
             <Textarea
               label="Description"
               value={ex.description}
+              placeholder="Describe your experience..."
               onChange={(v) => updateArrayItem('experience', i, 'description', v)}
-              rows={3}
+              rows={4}
             />
           </RepeatItem>
         ))}
       </Section>
 
-      {/* ---------------- 5. Education ---------------- */}
       <Section
         title="Education"
         onAdd={() => addArrayItem('education', { school: '', degree: '', year: '' })}
@@ -191,15 +225,29 @@ export default function ResumeForm({ resume, setResume }) {
         {(resume.education || []).map((ed, i) => (
           <RepeatItem key={`edu-${i}`} onRemove={() => removeArrayItem('education', i)}>
             <Grid>
-              <Input label="School" value={ed.school} onChange={(v) => updateArrayItem('education', i, 'school', v)} />
-              <Input label="Degree" value={ed.degree} onChange={(v) => updateArrayItem('education', i, 'degree', v)} />
-              <Input label="Year"   value={ed.year}   onChange={(v) => updateArrayItem('education', i, 'year', v)} />
+              <Input
+                label="School"
+                value={ed.school}
+                placeholder="Enter school name"
+                onChange={(v) => updateArrayItem('education', i, 'school', v)}
+              />
+              <Input
+                label="Degree"
+                value={ed.degree}
+                placeholder="Enter degree or program"
+                onChange={(v) => updateArrayItem('education', i, 'degree', v)}
+              />
+              <Input
+                label="Year"
+                value={ed.year}
+                placeholder="Enter graduation year"
+                onChange={(v) => updateArrayItem('education', i, 'year', v)}
+              />
             </Grid>
           </RepeatItem>
         ))}
       </Section>
 
-      {/* ---------------- 6. Projects ---------------- */}
       <Section
         title="Projects"
         onAdd={() => addArrayItem('projects', { title: '', description: '', link: '' })}
@@ -207,30 +255,45 @@ export default function ResumeForm({ resume, setResume }) {
         {(resume.projects || []).map((pr, i) => (
           <RepeatItem key={`proj-${i}`} onRemove={() => removeArrayItem('projects', i)}>
             <Grid>
-              <Input label="Title" value={pr.title} onChange={(v) => updateArrayItem('projects', i, 'title', v)} />
-              <Input label="Link"  value={pr.link}  onChange={(v) => updateArrayItem('projects', i, 'link', v)} />
+              <Input
+                label="Title"
+                value={pr.title}
+                placeholder="Enter project title"
+                onChange={(v) => updateArrayItem('projects', i, 'title', v)}
+              />
+              <Input
+                label="Link"
+                value={pr.link}
+                placeholder="Enter project link"
+                onChange={(v) => updateArrayItem('projects', i, 'link', v)}
+              />
             </Grid>
             <Textarea
               label="Description"
               value={pr.description}
+              placeholder="Describe your project..."
               onChange={(v) => updateArrayItem('projects', i, 'description', v)}
-              rows={3}
+              rows={4}
             />
           </RepeatItem>
         ))}
       </Section>
 
-      {/* ---------------- 7. Skills ---------------- */}
       <Section title="Skills">
+        <Input
+          label="Section title"
+          value={resume.skillsTitle}
+          placeholder="Skills"
+          onChange={(v) => updateField('skillsTitle', v)}
+        />
         <Input
           label="Comma-separated list"
           value={(resume.skills || []).join(', ')}
-          placeholder="JavaScript, React, Node.js"
+          placeholder="Enter your skills..."
           onChange={updateSkills}
         />
       </Section>
 
-      {/* ---------------- 8. Custom sections ---------------- */}
       <Section
         title="Custom sections"
         onAdd={() => addArrayItem('customSections', { title: '', content: '' })}
@@ -243,28 +306,58 @@ export default function ResumeForm({ resume, setResume }) {
             <Input
               label="Title"
               value={section.title}
-              placeholder="Certifications, Awards, Volunteer work…"
+              placeholder="Enter section title"
               onChange={(v) => updateArrayItem('customSections', i, 'title', v)}
             />
             <Textarea
               label="Content"
               value={section.content}
+              placeholder="Write section details..."
               onChange={(v) => updateArrayItem('customSections', i, 'content', v)}
-              rows={3}
+              rows={4}
             />
           </RepeatItem>
         ))}
+      </Section>
+
+      <Section title="Job Description (Optional)" tone="subtle">
+        <Textarea
+          label="Paste the target role description"
+          value={jobDescription}
+          onChange={setJobDescription}
+          rows={6}
+          placeholder="Paste the job description here..."
+        />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-xs text-slate-600">
+              Use AI to tailor the preview without replacing your original form entries.
+            </p>
+            {optimizeMessage && (
+              <p className="text-xs text-slate-500">{optimizeMessage}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onOptimize}
+            disabled={optimizing}
+            className="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {optimizing ? 'Optimizing...' : 'Optimize CV'}
+          </button>
+        </div>
       </Section>
     </div>
   );
 }
 
-/* ---------------------- Layout primitives ---------------------- */
+function Section({ title, children, onAdd, tone = 'default' }) {
+  const sectionClassName = tone === 'subtle'
+    ? 'rounded-lg border border-slate-300 bg-slate-100 p-5 sm:p-6'
+    : 'rounded-lg border border-slate-200 bg-white p-5 sm:p-6';
 
-/** Single form section — white card, subtle border, clear heading. */
-function Section({ title, children, onAdd }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
+    <section className={sectionClassName}>
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-700">
           {title}
@@ -284,12 +377,10 @@ function Section({ title, children, onAdd }) {
   );
 }
 
-/** Responsive 2-column grid for input pairs. */
 function Grid({ children }) {
   return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>;
 }
 
-/** Repeatable sub-card inside a section (one per experience/education/etc). */
 function RepeatItem({ children, onRemove }) {
   return (
     <div className="relative rounded-md border border-slate-200 bg-slate-50 p-4">
@@ -306,7 +397,6 @@ function RepeatItem({ children, onRemove }) {
   );
 }
 
-/** Plain text input — consistent size and focus ring. */
 function Input({ label, value, onChange, placeholder }) {
   return (
     <label className="block">
@@ -322,7 +412,6 @@ function Input({ label, value, onChange, placeholder }) {
   );
 }
 
-/** Neutral silhouette icon shown when no photo is uploaded. */
 function PhotoPlaceholder() {
   return (
     <svg
@@ -342,7 +431,6 @@ function PhotoPlaceholder() {
   );
 }
 
-/** Multi-line input — matches Input sizing. */
 function Textarea({ label, value, onChange, rows = 3, placeholder }) {
   return (
     <label className="block">

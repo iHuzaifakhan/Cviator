@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Cviator Pro — Smart Resume Builder
 
 A full-stack, production-ready resume builder web application with multiple templates,
@@ -253,3 +254,6 @@ where the `// TODO: integrate real AI API` comment lives.
 ## License
 
 MIT — do whatever you want, a credit is appreciated.
+=======
+# Cviator
+>>>>>>> dd7ce9e16d7a438fab36b9e5461fc2810fe72ce3
